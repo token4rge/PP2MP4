@@ -1,0 +1,5 @@
+{
+  "name": "PowerPoint to MP4 Converter",
+  "description": "Upload a PowerPoint (.pptx) file to convert each slide into an individual MP4 video clip. This tool uses the Gemini API to analyze slide content (text and images) and generate a dynamic video for each one.",
+  "requestFramePermissions": []
+}
