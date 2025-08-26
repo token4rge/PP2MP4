@@ -38,8 +38,8 @@ export const SlideReview: React.FC<SlideReviewProps> = ({ slides, selections, on
                                                     className="w-full h-full object-cover"
                                                 />
                                                 {isSelected && (
-                                                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300">
-                                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                    <div className="absolute top-2 right-2 bg-blue-600 rounded-full p-1 animate-scale-in-check">
+                                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
                                                     </div>
                                                 )}
                                             </div>

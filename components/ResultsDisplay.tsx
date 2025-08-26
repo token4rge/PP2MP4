@@ -110,7 +110,7 @@ const VideoCard: React.FC<{ result: VideoResult, index: number }> = ({ result, i
     return (
         <div 
             className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl flex flex-col opacity-0 animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }}
+            style={{ animationDelay: `${index * 120}ms` }}
         >
             <div 
                 ref={containerRef}
