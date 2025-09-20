@@ -73,8 +73,8 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
             }
         }
 
-        // Only add slides that contain some text
-        if (slideText.trim().length > 0) {
+        // Only add slides that contain some text or at least one image
+        if (slideText.trim().length > 0 || imageBases64.length > 0) {
             slides.push({
                 slideNumber,
                 text: slideText.trim(),

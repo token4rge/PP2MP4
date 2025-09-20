@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { ResultsDisplay } from './components/ResultsDisplay';
@@ -30,7 +30,15 @@ const App: React.FC = () => {
   const [frameRate, setFrameRate] = useState<FrameRate>('30fps');
   const [hollywoodGenre, setHollywoodGenre] = useState<HollywoodGenre>('None');
   const [customKeywords, setCustomKeywords] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('gemini-api-key') || '');
 
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('gemini-api-key', apiKey);
+    } else {
+      localStorage.removeItem('gemini-api-key');
+    }
+  }, [apiKey]);
 
   const handleFileUpload = useCallback(async (file: File) => {
     setAppState(AppState.PROCESSING);
@@ -67,6 +75,12 @@ const App: React.FC = () => {
   }, []);
 
   const handleStartGeneration = useCallback(async () => {
+    if (!apiKey) {
+      setErrorMessage('Please enter your Gemini API key before generating videos.');
+      setAppState(AppState.ERROR);
+      return;
+    }
+
     setAppState(AppState.PROCESSING);
     setErrorMessage('');
     setVideoResults([]);
@@ -78,6 +92,7 @@ const App: React.FC = () => {
         const selectedImageIndex = imageSelections[slide.slideNumber];
 
         const { videoUri, thumbnailUri } = await generateVideoFromSlide(
+            apiKey,
             slide, 
             videoStyle, 
             videoQuality, 
@@ -106,7 +121,7 @@ const App: React.FC = () => {
     } finally {
       setProcessingMessage('');
     }
-  }, [parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords]);
+  }, [apiKey, parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords]);
 
   const handleSelectionChange = (slideNumber: number, imageIndex: number) => {
     setImageSelections(prev => ({ ...prev, [slideNumber]: imageIndex }));
@@ -153,6 +168,8 @@ const App: React.FC = () => {
             onGenreChange={setHollywoodGenre}
             customKeywords={customKeywords}
             onKeywordsChange={setCustomKeywords}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
           />
         );
     }

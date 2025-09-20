@@ -16,13 +16,16 @@ interface FileUploadProps {
   onGenreChange: (genre: HollywoodGenre) => void;
   customKeywords: string;
   onKeywordsChange: (keywords: string) => void;
+  apiKey: string;
+  onApiKeyChange: (key: string) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
     onFileProcess, videoStyle, onStyleChange, videoQuality, onQualityChange, 
     aspectRatio, onAspectRatioChange, frameRate, onFrameRateChange,
     hollywoodGenre, onGenreChange, 
-    customKeywords, onKeywordsChange 
+    customKeywords, onKeywordsChange,
+    apiKey, onApiKeyChange
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,6 +184,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </div>
         </div>
       )}
+
+      <div className="w-full max-w-4xl">
+        <label htmlFor="api-key" className="block text-sm font-medium text-gray-300 mb-2">
+          Gemini API Key
+        </label>
+        <input
+          type="password"
+          id="api-key"
+          name="api-key"
+          className="block w-full pl-3 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+          placeholder="Enter your API key"
+          value={apiKey}
+          onChange={(e) => onApiKeyChange(e.target.value)}
+        />
+      </div>
 
       <div 
           className={dropZoneClasses}

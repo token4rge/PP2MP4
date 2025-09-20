@@ -1,10 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { SlideData, VideoStyle, VideoQuality, AspectRatio, HollywoodGenre, FrameRate } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-
 // Helper function to poll for video generation status, as this is an async operation
-const pollVideoOperation = async (operation: any): Promise<any> => {
+const pollVideoOperation = async (ai: GoogleGenAI, operation: any): Promise<any> => {
     let currentOperation = operation;
     while (!currentOperation.done) {
         // Wait for 10 seconds before polling again
@@ -19,6 +17,7 @@ const pollVideoOperation = async (operation: any): Promise<any> => {
 };
 
 export const generateVideoFromSlide = async (
+    apiKey: string,
     slide: SlideData, 
     style: VideoStyle, 
     quality: VideoQuality, 
@@ -28,7 +27,14 @@ export const generateVideoFromSlide = async (
     keywords: string,
     selectedImageIndex?: number
 ): Promise<{ videoUri: string; thumbnailUri?: string }> => {
-    let prompt = `Create a short, engaging video clip based on this narration: "${slide.text}". The video should visually represent the text's content, be in a ${aspectRatio} aspect ratio, and rendered at ${frameRate}.`;
+    const ai = new GoogleGenAI({ apiKey });
+    let prompt = `Create a short, engaging video clip in a ${aspectRatio} aspect ratio and rendered at ${frameRate}.`;
+
+    if (slide.text.trim()) {
+        prompt += ` The video should be based on this narration: "${slide.text}".`;
+    } else {
+        prompt += ` The video should be a visually interesting clip.`;
+    }
 
     if (style === 'Hollywood') {
         let hollywoodPrompt = `Generate a cinematic, Hollywood-style video in a ${aspectRatio} aspect ratio and at ${frameRate}. The video should be epic, with dramatic visuals, and feel like a movie trailer.`;
@@ -38,10 +44,15 @@ export const generateVideoFromSlide = async (
         if (keywords.trim() !== '') {
             hollywoodPrompt += ` Incorporate the following elements or styles: ${keywords}.`;
         }
-        hollywoodPrompt += ` Base the entire video on this core narration: "${slide.text}".`;
+        if (slide.text.trim()) {
+            hollywoodPrompt += ` Base the entire video on this core narration: "${slide.text}".`;
+        }
         prompt = hollywoodPrompt;
     } else if (style !== 'Default') {
-        prompt = `Create a short, engaging video clip in a ${style.toLowerCase()} style, based on this narration: "${slide.text}". The video should visually represent the text's content, be in a ${aspectRatio} aspect ratio, and rendered at ${frameRate}.`;
+        prompt = `Create a short, engaging video clip in a ${style.toLowerCase()} style, in a ${aspectRatio} aspect ratio, and rendered at ${frameRate}.`;
+        if (slide.text.trim()) {
+            prompt += ` The video should be based on this narration: "${slide.text}".`;
+        }
     }
     
     // The Gemini VEO API does not currently support a direct parameter for video quality.
@@ -79,7 +90,7 @@ export const generateVideoFromSlide = async (
 
     try {
         let operation = await ai.models.generateVideos(request);
-        const finalOperation = await pollVideoOperation(operation);
+        const finalOperation = await pollVideoOperation(ai, operation);
 
         const downloadLink = finalOperation.response?.generatedVideos?.[0]?.video?.uri;
         // The API currently does not provide a separate thumbnail URI.
