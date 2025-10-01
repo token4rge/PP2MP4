@@ -107,14 +107,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const aspectRatios: AspectRatio[] = ['16:9', '9:16', '1:1', '4:3', '3:4'];
   const frameRates: FrameRate[] = ['24fps', '30fps', '60fps'];
   const hollywoodGenres: HollywoodGenre[] = ['None', 'Action', 'Sci-Fi', 'Drama', 'Thriller', 'Epic Fantasy'];
-  const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom', 'Wipe', 'Crossfade'];
+  const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom', 'Wipe', 'Crossfade', 'Dissolve', 'Iris', 'Push'];
   const transitionStyleLabels: Record<TransitionStyle, string> = {
     'None': 'None (Individual Clips)',
     'Fade': 'Fade',
     'Slide': 'Slide',
     'Zoom': 'Zoom',
     'Wipe': 'Wipe',
-    'Crossfade': 'Crossfade'
+    'Crossfade': 'Crossfade',
+    'Dissolve': 'Dissolve',
+    'Iris': 'Iris',
+    'Push': 'Push'
   }
 
   return (

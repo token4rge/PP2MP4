@@ -1,3 +1,4 @@
+// FIX: Removed the self-import of 'SlideData' that conflicted with its local declaration.
 
 export interface SlideImage {
     base64: string;
@@ -29,4 +30,4 @@ export type FrameRate = '24fps' | '30fps' | '60fps';
 
 export type HollywoodGenre = 'None' | 'Action' | 'Sci-Fi' | 'Drama' | 'Thriller' | 'Epic Fantasy';
 
-export type TransitionStyle = 'None' | 'Fade' | 'Slide' | 'Zoom' | 'Wipe' | 'Crossfade';
+export type TransitionStyle = 'None' | 'Fade' | 'Slide' | 'Zoom' | 'Wipe' | 'Crossfade' | 'Dissolve' | 'Iris' | 'Push';
