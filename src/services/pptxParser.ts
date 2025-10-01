@@ -1,8 +1,9 @@
+
 import JSZip from 'jszip';
-import { SlideData } from '../types';
+import { SlideData, SlideImage } from '../types';
 
 // Helper to safely get XML content from the zipped file
-const getXmlContent = async (zip: any, path: string): Promise<XMLDocument | null> => {
+const getXmlContent = async (zip: JSZip, path: string): Promise<XMLDocument | null> => {
     const file = zip.file(path);
     if (file) {
         const text = await file.async('text');
@@ -12,7 +13,7 @@ const getXmlContent = async (zip: any, path: string): Promise<XMLDocument | null
 };
 
 // Helper to find image relationships for a specific slide
-const getSlideImageRels = async (zip: any, slideNumber: number): Promise<Record<string, string>> => {
+const getSlideImageRels = async (zip: JSZip, slideNumber: number): Promise<Record<string, string>> => {
     const rels: Record<string, string> = {};
     const relsPath = `ppt/slides/_rels/slide${slideNumber}.xml.rels`;
     const relsXml = await getXmlContent(zip, relsPath);
@@ -54,7 +55,7 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
             slideText += textNodes[i].textContent + ' ';
         }
 
-        const imageBases64: string[] = [];
+        const images: SlideImage[] = [];
         const imageRels = await getSlideImageRels(zip, slideNumber);
         const imageElements = slideXml.getElementsByTagName('a:blip');
 
@@ -67,7 +68,18 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
                     const imageFile = zip.file(imagePath);
                     if (imageFile) {
                         const base64 = await imageFile.async('base64');
-                        imageBases64.push(base64);
+                        const extension = imagePath.split('.').pop()?.toLowerCase() ?? '';
+                        let mimeType = 'image/png'; // Default
+                        switch (extension) {
+                            case 'jpg':
+                            case 'jpeg':
+                                mimeType = 'image/jpeg';
+                                break;
+                            case 'png':
+                                mimeType = 'image/png';
+                                break;
+                        }
+                        images.push({ base64, mimeType });
                     }
                 }
             }
@@ -78,7 +90,7 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
             slides.push({
                 slideNumber,
                 text: slideText.trim(),
-                imageBases64,
+                images,
             });
         }
 

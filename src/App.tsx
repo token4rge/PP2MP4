@@ -1,10 +1,11 @@
+
 import React, { useState, useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { ResultsDisplay } from './components/ResultsDisplay';
 import { extractSlidesFromPptx } from './services/pptxParser';
-import { generateVideoFromSlide } from './services/geminiService';
-import { type SlideData, type VideoResult, type VideoStyle, type VideoQuality, type HollywoodGenre, type AspectRatio, type FrameRate } from './types';
+import { generateVideoFromSlide, generateSingleVideoFromSlides } from './services/geminiService';
+import { type SlideData, type VideoResult, type VideoStyle, type VideoQuality, type HollywoodGenre, type AspectRatio, type FrameRate, type TransitionStyle, type SlideImage } from './types';
 import { Header } from './components/Header';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { SlideReview } from './components/SlideReview';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
   const [frameRate, setFrameRate] = useState<FrameRate>('30fps');
   const [hollywoodGenre, setHollywoodGenre] = useState<HollywoodGenre>('None');
   const [customKeywords, setCustomKeywords] = useState<string>('');
+  const [transitionStyle, setTransitionStyle] = useState<TransitionStyle>('None');
 
 
   const handleFileUpload = useCallback(async (file: File) => {
@@ -49,7 +51,7 @@ const App: React.FC = () => {
 
       const initialSelections: Record<number, number> = {};
        slides.forEach(slide => {
-          if (slide.imageBases64.length > 0) {
+          if (slide.images.length > 0) {
               initialSelections[slide.slideNumber] = 0;
           }
       });
@@ -57,9 +59,8 @@ const App: React.FC = () => {
 
       setAppState(AppState.REVIEWING_SLIDES);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-      console.error("Parsing failed:", message);
-      setErrorMessage(message);
+      console.error("Presentation parsing failed:", error);
+      setErrorMessage('Failed to parse the presentation. Please ensure it is a valid .pptx file and is not corrupted.');
       setAppState(AppState.ERROR);
     } finally {
       setProcessingMessage('');
@@ -72,41 +73,80 @@ const App: React.FC = () => {
     setVideoResults([]);
 
     try {
-      const results: VideoResult[] = [];
-      for (const slide of parsedSlides) {
-        setProcessingMessage(`Generating video for slide ${slide.slideNumber} of ${parsedSlides.length}...`);
-        const selectedImageIndex = imageSelections[slide.slideNumber];
+      if (transitionStyle === 'None') {
+        // Generate individual video clips
+        const results: VideoResult[] = [];
+        for (const slide of parsedSlides) {
+          setProcessingMessage(`Generating video for slide ${slide.slideNumber} of ${parsedSlides.length}...`);
+          const selectedImageIndex = imageSelections[slide.slideNumber];
 
-        const { videoUri, thumbnailUri } = await generateVideoFromSlide(
-            slide, 
-            videoStyle, 
-            videoQuality, 
-            aspectRatio,
-            frameRate,
-            hollywoodGenre, 
-            customKeywords,
-            selectedImageIndex
-        );
+          const selectedImageObject = slide.images.length > 0 && selectedImageIndex !== undefined
+            ? slide.images[selectedImageIndex]
+            : undefined;
+
+          const { videoUri, thumbnailUri } = await generateVideoFromSlide(
+              slide, 
+              videoStyle, 
+              videoQuality, 
+              aspectRatio,
+              frameRate,
+              hollywoodGenre, 
+              customKeywords,
+              selectedImageObject
+          );
+          
+          const newResult: VideoResult = {
+            slideNumber: slide.slideNumber,
+            videoUri,
+            thumbnailUri,
+            text: slide.text,
+            image: selectedImageObject,
+          };
+          results.push(newResult);
+          setVideoResults([...results]); 
+        }
+      } else {
+        // Generate a single combined video
+        setProcessingMessage(`Generating single video with '${transitionStyle}' transitions...`);
+        let firstImage: SlideImage | undefined;
+        for (const slide of parsedSlides) {
+          const selectedImageIndex = imageSelections[slide.slideNumber];
+          if (slide.images.length > 0 && selectedImageIndex !== undefined) {
+            firstImage = slide.images[selectedImageIndex];
+            break; 
+          }
+        }
         
-        const newResult: VideoResult = {
-          slideNumber: slide.slideNumber,
+        const { videoUri, thumbnailUri } = await generateSingleVideoFromSlides(
+          parsedSlides,
+          imageSelections,
+          videoStyle,
+          videoQuality,
+          aspectRatio,
+          frameRate,
+          hollywoodGenre,
+          customKeywords,
+          transitionStyle
+        );
+
+        const combinedResult: VideoResult = {
+          slideNumber: 1,
           videoUri,
           thumbnailUri,
-          text: slide.text,
+          text: `Combined video of ${parsedSlides.length} slides with '${transitionStyle}' transitions.`,
+          image: firstImage,
         };
-        results.push(newResult);
-        setVideoResults([...results]); 
+        setVideoResults([combinedResult]);
       }
       setAppState(AppState.SUCCESS);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
-      console.error("Processing failed:", message);
-      setErrorMessage(message);
+      console.error("Video generation failed:", error);
+      setErrorMessage('Video generation failed. This may be a temporary API issue. Please try again. If the problem persists, try different generation settings.');
       setAppState(AppState.ERROR);
     } finally {
       setProcessingMessage('');
     }
-  }, [parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords]);
+  }, [parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords, transitionStyle]);
 
   const handleSelectionChange = (slideNumber: number, imageIndex: number) => {
     setImageSelections(prev => ({ ...prev, [slideNumber]: imageIndex }));
@@ -153,6 +193,8 @@ const App: React.FC = () => {
             onGenreChange={setHollywoodGenre}
             customKeywords={customKeywords}
             onKeywordsChange={setCustomKeywords}
+            transitionStyle={transitionStyle}
+            onTransitionChange={setTransitionStyle}
           />
         );
     }

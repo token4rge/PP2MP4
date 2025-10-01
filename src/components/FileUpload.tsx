@@ -1,6 +1,7 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { UploadIcon } from './IconComponents';
-import { VideoStyle, VideoQuality, HollywoodGenre, AspectRatio, FrameRate } from '../types';
+import { VideoStyle, VideoQuality, HollywoodGenre, AspectRatio, FrameRate, TransitionStyle } from '../types';
 
 interface FileUploadProps {
   onFileProcess: (file: File) => void;
@@ -16,13 +17,16 @@ interface FileUploadProps {
   onGenreChange: (genre: HollywoodGenre) => void;
   customKeywords: string;
   onKeywordsChange: (keywords: string) => void;
+  transitionStyle: TransitionStyle;
+  onTransitionChange: (style: TransitionStyle) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
     onFileProcess, videoStyle, onStyleChange, videoQuality, onQualityChange, 
     aspectRatio, onAspectRatioChange, frameRate, onFrameRateChange,
     hollywoodGenre, onGenreChange, 
-    customKeywords, onKeywordsChange 
+    customKeywords, onKeywordsChange,
+    transitionStyle, onTransitionChange
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,52 +39,57 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   }, [onFileProcess]);
 
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragEnter = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
     handleFile(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     handleFile(file);
+    e.target.value = '';
   };
   
-  const openFileDialog = () => {
-    if (fileInputRef.current) {
-        fileInputRef.current.click();
-    }
-  };
-
   const dropZoneClasses = `flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-300 ${isDragging ? 'border-blue-400 bg-gray-700' : 'border-gray-600 bg-gray-800 hover:border-gray-500'}`;
-  const videoStyles: VideoStyle[] = ['Default', 'Cinematic', 'Animated', 'Documentary', 'Vibrant', 'Hollywood'];
+  const videoStyles: VideoStyle[] = ['Default', 'Cinematic', 'Animation', 'Documentary', 'Vibrant', 'Hollywood', 'Stop-motion', 'Abstract'];
   const videoQualities: VideoQuality[] = ['480p', '720p', '1080p'];
   const aspectRatios: AspectRatio[] = ['16:9', '9:16', '1:1', '4:3', '3:4'];
   const frameRates: FrameRate[] = ['24fps', '30fps', '60fps'];
   const hollywoodGenres: HollywoodGenre[] = ['None', 'Action', 'Sci-Fi', 'Drama', 'Thriller', 'Epic Fantasy'];
+  const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom'];
+  const transitionStyleLabels: Record<TransitionStyle, string> = {
+    'None': 'None (Individual Clips)',
+    'Fade': 'Fade',
+    'Slide': 'Slide',
+    'Zoom': 'Zoom'
+  }
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
-      <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-5 gap-4">
         <div>
           <label htmlFor="video-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
             Video Style
@@ -145,6 +154,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             ))}
           </select>
         </div>
+        <div className="relative">
+            <label htmlFor="transition-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Transition Style
+                {transitionStyle !== 'None' && (
+                    <span className="group relative ml-1">
+                        <svg className="inline-block w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                        <span className="absolute bottom-full left-1/2 z-10 w-48 p-2 -translate-x-1/2 mb-2 text-xs leading-tight text-white transform bg-gray-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                           With transitions, only the first slide's image can be used as a reference for the whole video.
+                        </span>
+                    </span>
+                )}
+            </label>
+            <select
+                id="transition-style"
+                name="transition-style"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                value={transitionStyle}
+                onChange={(e) => onTransitionChange(e.target.value as TransitionStyle)}
+            >
+                {transitionStyles.map(style => (
+                <option key={style} value={style}>{transitionStyleLabels[style]}</option>
+                ))}
+            </select>
+        </div>
       </div>
 
       {videoStyle === 'Hollywood' && (
@@ -182,15 +215,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-      <div 
+      <label 
+          htmlFor="file-upload"
           className={dropZoneClasses}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={openFileDialog}
-          role="button"
-          aria-label="File upload zone"
       >
           <UploadIcon />
           <p className="mt-4 text-lg text-gray-400">
@@ -205,8 +236,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               onChange={handleFileSelect}
               className="hidden"
               accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              id="file-upload"
+              name="file-upload"
           />
-      </div>
+      </label>
     </div>
   );
 };
