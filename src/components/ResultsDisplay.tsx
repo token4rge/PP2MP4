@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { VideoResult } from '../types';
 import { DownloadIcon, RetryIcon, ZipIcon } from './IconComponents';
@@ -15,7 +14,32 @@ const VideoCard: React.FC<{ result: VideoResult, index: number }> = ({ result, i
     const videoUrl = `${result.videoUri}&key=${process.env.API_KEY}`;
     const thumbnailUrl = result.thumbnailUri ? `${result.thumbnailUri}&key=${process.env.API_KEY}` : undefined;
     const posterUrl = thumbnailUrl || (result.image ? `data:${result.image.mimeType};base64,${result.image.base64}` : undefined);
+    const [isDownloading, setIsDownloading] = useState(false);
     
+    const handleDownload = async () => {
+        setIsDownloading(true);
+        try {
+            const response = await fetch(videoUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch video: ${response.statusText}`);
+            }
+            const videoBlob = await response.blob();
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(videoBlob);
+            link.download = `slide_${result.slideNumber}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('Error downloading video:', error);
+            alert(`An error occurred while downloading the video: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <div 
             className="bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl flex flex-col opacity-0 animate-fade-in"
@@ -25,10 +49,13 @@ const VideoCard: React.FC<{ result: VideoResult, index: number }> = ({ result, i
                  <video 
                     src={videoUrl} 
                     poster={posterUrl}
-                    preload="metadata" 
+                    preload="auto" 
                     className="w-full h-full object-cover"
                     controls
                     playsInline
+                    autoPlay
+                    muted
+                    loop
                  >
                     Your browser does not support the video tag.
                 </video>
@@ -38,16 +65,14 @@ const VideoCard: React.FC<{ result: VideoResult, index: number }> = ({ result, i
                 <p className="text-gray-400 text-sm h-20 overflow-y-auto pr-2 flex-grow scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
                     <span className="font-semibold text-gray-300">Narration:</span> {result.text}
                 </p>
-                <a
-                    href={videoUrl}
-                    download={`slide_${result.slideNumber}.mp4`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800"
+                <button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="mt-4 w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 disabled:bg-blue-800 disabled:cursor-not-allowed"
                 >
                     <DownloadIcon />
-                    <span className="ml-2">Download Video</span>
-                </a>
+                    <span className="ml-2">{isDownloading ? 'Downloading...' : 'Download Video'}</span>
+                </button>
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 
 import JSZip from 'jszip';
 import { SlideData, SlideImage } from '../types';
+import { extractTextFromImage } from './geminiService';
 
 // Helper to safely get XML content from the zipped file
 const getXmlContent = async (zip: JSZip, path: string): Promise<XMLDocument | null> => {
@@ -36,9 +37,9 @@ const getSlideImageRels = async (zip: JSZip, slideNumber: number): Promise<Recor
 };
 
 // Main function to extract structured data from all slides
-export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> => {
+export const extractSlidesFromPptx = async (file: File, onProgressUpdate?: (message: string) => void): Promise<SlideData[]> => {
     const zip = await JSZip.loadAsync(file);
-    const slides: SlideData[] = [];
+    const slidesData: SlideData[] = [];
     let slideNumber = 1;
 
     while (true) {
@@ -48,6 +49,8 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
         if (!slideXml) {
             break; // No more slides found
         }
+        
+        onProgressUpdate?.(`Parsing slide ${slideNumber}...`);
 
         const textNodes = slideXml.getElementsByTagName('a:t');
         let slideText = '';
@@ -59,7 +62,6 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
         const imageRels = await getSlideImageRels(zip, slideNumber);
         const imageElements = slideXml.getElementsByTagName('a:blip');
 
-        // Extract all images found on the slide
         if (imageElements.length > 0) {
             for (let i = 0; i < imageElements.length; i++) {
                 const embedId = imageElements[i].getAttribute('r:embed');
@@ -84,22 +86,47 @@ export const extractSlidesFromPptx = async (file: File): Promise<SlideData[]> =>
                 }
             }
         }
+        
+        const thumbnailPath = `ppt/thumbnails/thumbnail${slideNumber}.jpeg`;
+        const thumbnailFile = zip.file(thumbnailPath);
+        let thumbnailBase64: string | undefined = undefined;
+        if (thumbnailFile) {
+            thumbnailBase64 = await thumbnailFile.async('base64');
+        }
 
-        // Only add slides that contain some text
-        if (slideText.trim().length > 0) {
-            slides.push({
+        // Only add slides that contain some content
+        if (slideText.trim().length > 0 || images.length > 0) {
+            slidesData.push({
                 slideNumber,
                 text: slideText.trim(),
                 images,
+                thumbnailBase64
             });
         }
 
         slideNumber++;
     }
 
-    if (slides.length === 0) {
-        throw new Error("Could not find any slides with text content in the presentation.");
+    if (slidesData.length === 0) {
+        throw new Error("Could not find any slides with text or image content in the presentation.");
+    }
+    
+    onProgressUpdate?.('Analyzing slide images with OCR...');
+    for (const slide of slidesData) {
+         if (slide.images.length > 0) {
+             const ocrPromises = slide.images.map(image => extractTextFromImage(image));
+             try {
+                const ocrResults = await Promise.all(ocrPromises);
+                const ocrText = ocrResults.filter(text => text).join(' ');
+                if (ocrText) {
+                    slide.text = `${slide.text} ${ocrText}`.trim();
+                }
+             } catch(e) {
+                console.warn(`OCR failed for slide ${slide.slideNumber}, continuing with existing text.`, e);
+             }
+         }
     }
 
-    return slides;
+
+    return slidesData;
 };

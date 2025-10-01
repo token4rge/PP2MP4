@@ -8,6 +8,7 @@ export interface SlideData {
   slideNumber: number;
   text: string;
   images: SlideImage[];
+  thumbnailBase64?: string;
 }
 
 export interface VideoResult {
@@ -28,4 +29,4 @@ export type FrameRate = '24fps' | '30fps' | '60fps';
 
 export type HollywoodGenre = 'None' | 'Action' | 'Sci-Fi' | 'Drama' | 'Thriller' | 'Epic Fantasy';
 
-export type TransitionStyle = 'None' | 'Fade' | 'Slide' | 'Zoom';
+export type TransitionStyle = 'None' | 'Fade' | 'Slide' | 'Zoom' | 'Wipe' | 'Crossfade';

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -32,6 +31,9 @@ const App: React.FC = () => {
   const [hollywoodGenre, setHollywoodGenre] = useState<HollywoodGenre>('None');
   const [customKeywords, setCustomKeywords] = useState<string>('');
   const [transitionStyle, setTransitionStyle] = useState<TransitionStyle>('None');
+  const [addVoiceover, setAddVoiceover] = useState<boolean>(true);
+  const [addHollywoodIntro, setAddHollywoodIntro] = useState<boolean>(false);
+  const [videoDuration, setVideoDuration] = useState<number>(15);
 
 
   const handleFileUpload = useCallback(async (file: File) => {
@@ -43,7 +45,7 @@ const App: React.FC = () => {
     setImageSelections({});
 
     try {
-      const slides = await extractSlidesFromPptx(file);
+      const slides = await extractSlidesFromPptx(file, (message) => setProcessingMessage(message));
       if (slides.length === 0) {
         throw new Error('No content could be extracted from the presentation.');
       }
@@ -60,7 +62,8 @@ const App: React.FC = () => {
       setAppState(AppState.REVIEWING_SLIDES);
     } catch (error) {
       console.error("Presentation parsing failed:", error);
-      setErrorMessage('Failed to parse the presentation. Please ensure it is a valid .pptx file and is not corrupted.');
+      const message = error instanceof Error ? error.message : 'An unknown error occurred during parsing.';
+      setErrorMessage(`Failed to parse the presentation. ${message}`);
       setAppState(AppState.ERROR);
     } finally {
       setProcessingMessage('');
@@ -92,7 +95,10 @@ const App: React.FC = () => {
               frameRate,
               hollywoodGenre, 
               customKeywords,
-              selectedImageObject
+              selectedImageObject,
+              addVoiceover,
+              addHollywoodIntro,
+              videoDuration
           );
           
           const newResult: VideoResult = {
@@ -126,7 +132,10 @@ const App: React.FC = () => {
           frameRate,
           hollywoodGenre,
           customKeywords,
-          transitionStyle
+          transitionStyle,
+          addVoiceover,
+          addHollywoodIntro,
+          videoDuration
         );
 
         const combinedResult: VideoResult = {
@@ -141,12 +150,13 @@ const App: React.FC = () => {
       setAppState(AppState.SUCCESS);
     } catch (error) {
       console.error("Video generation failed:", error);
-      setErrorMessage('Video generation failed. This may be a temporary API issue. Please try again. If the problem persists, try different generation settings.');
+      const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+      setErrorMessage(`Video generation failed. ${message}`);
       setAppState(AppState.ERROR);
     } finally {
       setProcessingMessage('');
     }
-  }, [parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords, transitionStyle]);
+  }, [parsedSlides, imageSelections, videoStyle, videoQuality, aspectRatio, frameRate, hollywoodGenre, customKeywords, transitionStyle, addVoiceover, addHollywoodIntro, videoDuration]);
 
   const handleSelectionChange = (slideNumber: number, imageIndex: number) => {
     setImageSelections(prev => ({ ...prev, [slideNumber]: imageIndex }));
@@ -195,6 +205,12 @@ const App: React.FC = () => {
             onKeywordsChange={setCustomKeywords}
             transitionStyle={transitionStyle}
             onTransitionChange={setTransitionStyle}
+            addVoiceover={addVoiceover}
+            onVoiceoverChange={setAddVoiceover}
+            addHollywoodIntro={addHollywoodIntro}
+            onHollywoodIntroChange={setAddHollywoodIntro}
+            videoDuration={videoDuration}
+            onDurationChange={setVideoDuration}
           />
         );
     }

@@ -1,7 +1,8 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { UploadIcon } from './IconComponents';
 import { VideoStyle, VideoQuality, HollywoodGenre, AspectRatio, FrameRate, TransitionStyle } from '../types';
+import { generateKeywordsForStyle } from '../services/geminiService';
+
 
 interface FileUploadProps {
   onFileProcess: (file: File) => void;
@@ -19,6 +20,12 @@ interface FileUploadProps {
   onKeywordsChange: (keywords: string) => void;
   transitionStyle: TransitionStyle;
   onTransitionChange: (style: TransitionStyle) => void;
+  addVoiceover: boolean;
+  onVoiceoverChange: (add: boolean) => void;
+  addHollywoodIntro: boolean;
+  onHollywoodIntroChange: (add: boolean) => void;
+  videoDuration: number;
+  onDurationChange: (duration: number) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ 
@@ -26,9 +33,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     aspectRatio, onAspectRatioChange, frameRate, onFrameRateChange,
     hollywoodGenre, onGenreChange, 
     customKeywords, onKeywordsChange,
-    transitionStyle, onTransitionChange
+    transitionStyle, onTransitionChange,
+    addVoiceover, onVoiceoverChange,
+    addHollywoodIntro, onHollywoodIntroChange,
+    videoDuration, onDurationChange
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File | null | undefined) => {
@@ -73,23 +84,42 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     e.target.value = '';
   };
   
+  const handleGenerateKeywords = async () => {
+    if (hollywoodGenre === 'None') {
+      alert("Please select a genre first to generate relevant keywords.");
+      return;
+    }
+    setIsGeneratingKeywords(true);
+    try {
+      const keywords = await generateKeywordsForStyle(hollywoodGenre);
+      onKeywordsChange(keywords);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        alert(`Failed to generate keywords: ${message}`);
+    } finally {
+      setIsGeneratingKeywords(false);
+    }
+  };
+
   const dropZoneClasses = `flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-8 border-2 border-dashed rounded-xl cursor-pointer transition-colors duration-300 ${isDragging ? 'border-blue-400 bg-gray-700' : 'border-gray-600 bg-gray-800 hover:border-gray-500'}`;
   const videoStyles: VideoStyle[] = ['Default', 'Cinematic', 'Animation', 'Documentary', 'Vibrant', 'Hollywood', 'Stop-motion', 'Abstract'];
   const videoQualities: VideoQuality[] = ['480p', '720p', '1080p'];
   const aspectRatios: AspectRatio[] = ['16:9', '9:16', '1:1', '4:3', '3:4'];
   const frameRates: FrameRate[] = ['24fps', '30fps', '60fps'];
   const hollywoodGenres: HollywoodGenre[] = ['None', 'Action', 'Sci-Fi', 'Drama', 'Thriller', 'Epic Fantasy'];
-  const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom'];
+  const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom', 'Wipe', 'Crossfade'];
   const transitionStyleLabels: Record<TransitionStyle, string> = {
     'None': 'None (Individual Clips)',
     'Fade': 'Fade',
     'Slide': 'Slide',
-    'Zoom': 'Zoom'
+    'Zoom': 'Zoom',
+    'Wipe': 'Wipe',
+    'Crossfade': 'Crossfade'
   }
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
-      <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
           <label htmlFor="video-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
             Video Style
@@ -154,7 +184,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             ))}
           </select>
         </div>
-        <div className="relative">
+        <div className="relative col-span-2">
             <label htmlFor="transition-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
                 Transition Style
                 {transitionStyle !== 'None' && (
@@ -178,18 +208,50 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 ))}
             </select>
         </div>
+        <div className="flex flex-col items-center justify-center">
+            <label htmlFor="voiceover-toggle" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Add Voiceover
+            </label>
+            <button
+                type="button"
+                className={`${addVoiceover ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`}
+                role="switch"
+                aria-checked={addVoiceover}
+                onClick={() => onVoiceoverChange(!addVoiceover)}
+                id="voiceover-toggle"
+            >
+                <span className={`${addVoiceover ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}/>
+            </button>
+        </div>
       </div>
+      
+       <div className="w-full max-w-4xl col-span-full">
+            <label htmlFor="video-duration" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Video Duration: <span className="font-bold text-blue-400">{videoDuration}s</span>
+            </label>
+            <input
+                id="video-duration"
+                type="range"
+                min="5"
+                max="60"
+                step="1"
+                value={videoDuration}
+                onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+        </div>
+
 
       {videoStyle === 'Hollywood' && (
-        <div className="w-full max-w-4xl bg-gray-800 p-4 rounded-lg animate-slide-down flex flex-col sm:flex-row gap-4">
-           <div>
+        <div className="w-full max-w-4xl bg-gray-800 p-4 rounded-lg animate-slide-down flex flex-col sm:flex-row gap-4 items-center">
+           <div className="flex flex-col">
               <label htmlFor="hollywood-genre" className="block text-sm font-medium text-gray-300 mb-2 text-center">
                 Hollywood Genre
               </label>
               <select
                 id="hollywood-genre"
                 name="hollywood-genre"
-                className="block w-full sm:w-64 pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                className="block w-full sm:w-48 pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                 value={hollywoodGenre}
                 onChange={(e) => onGenreChange(e.target.value as HollywoodGenre)}
               >
@@ -202,15 +264,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <label htmlFor="custom-keywords" className="block text-sm font-medium text-gray-300 mb-2 text-center">
                 Custom Keywords (optional)
               </label>
-              <input
-                type="text"
-                id="custom-keywords"
-                name="custom-keywords"
-                className="block w-full pl-3 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                placeholder="e.g., lens flare, 80s synthwave"
-                value={customKeywords}
-                onChange={(e) => onKeywordsChange(e.target.value)}
-              />
+               <div className="relative">
+                <input
+                  type="text"
+                  id="custom-keywords"
+                  name="custom-keywords"
+                  className="block w-full pl-3 pr-28 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  placeholder="e.g., lens flare, 80s synthwave"
+                  value={customKeywords}
+                  onChange={(e) => onKeywordsChange(e.target.value)}
+                />
+                 <button
+                    onClick={handleGenerateKeywords}
+                    disabled={isGeneratingKeywords || hollywoodGenre === 'None'}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-sm font-medium text-white bg-blue-600 rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 disabled:bg-blue-800 disabled:cursor-not-allowed"
+                  >
+                    {isGeneratingKeywords ? '...' : 'AI Styles'}
+                  </button>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center pt-2 sm:pt-0">
+                <label htmlFor="hollywood-intro-toggle" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                    Hollywood Intro
+                </label>
+                <button
+                    type="button"
+                    className={`${addHollywoodIntro ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`}
+                    role="switch"
+                    aria-checked={addHollywoodIntro}
+                    onClick={() => onHollywoodIntroChange(!addHollywoodIntro)}
+                    id="hollywood-intro-toggle"
+                >
+                    <span className={`${addHollywoodIntro ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}/>
+                </button>
             </div>
         </div>
       )}
