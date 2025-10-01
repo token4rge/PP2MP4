@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -161,6 +162,28 @@ const App: React.FC = () => {
   const handleSelectionChange = (slideNumber: number, imageIndex: number) => {
     setImageSelections(prev => ({ ...prev, [slideNumber]: imageIndex }));
   };
+  
+  const handleAddNewImageToSlide = (slideNumber: number, newImage: SlideImage) => {
+    let newImageIndex = -1;
+    setParsedSlides(prevSlides => 
+        prevSlides.map(slide => {
+            if (slide.slideNumber === slideNumber) {
+                const updatedImages = [...slide.images, newImage];
+                newImageIndex = updatedImages.length - 1;
+                return { ...slide, images: updatedImages };
+            }
+            return slide;
+        })
+    );
+
+    if (newImageIndex !== -1) {
+        setImageSelections(prevSelections => ({
+            ...prevSelections,
+            [slideNumber]: newImageIndex,
+        }));
+    }
+};
+
 
   const handleReset = () => {
     setAppState(AppState.IDLE);
@@ -181,6 +204,7 @@ const App: React.FC = () => {
           onSelectionChange={handleSelectionChange}
           onGenerate={handleStartGeneration}
           onCancel={handleReset}
+          onUpdateSlide={handleAddNewImageToSlide}
         />;
       case AppState.SUCCESS:
         return <ResultsDisplay results={videoResults} onReset={handleReset} />;
