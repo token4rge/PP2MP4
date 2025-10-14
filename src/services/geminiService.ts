@@ -57,7 +57,7 @@ export const extractTextFromImage = async (image: SlideImage): Promise<string> =
                 ]
             },
         });
-        return response.text.trim();
+        return (response.text || "").trim();
     } catch (error) {
         console.error("Error during OCR text extraction:", error);
         // Do not throw; just return empty so the main process is not blocked.
@@ -73,7 +73,7 @@ export const generateKeywordsForStyle = async (genre: HollywoodGenre): Promise<s
             model: 'gemini-2.5-flash',
             contents: `Generate 5-7 creative and descriptive keywords for a video with a "${genre}" genre. Return only a comma-separated list. For example: "keyword one, keyword two, keyword three"`,
         });
-        return response.text.trim();
+        return (response.text || "").trim();
     } catch(e) {
         const message = e instanceof Error ? e.message : "An unknown error occurred";
         console.error("Error generating keywords:", message);
