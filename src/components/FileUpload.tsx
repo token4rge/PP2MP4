@@ -291,6 +291,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               name="file-upload"
           />
       </label>
+
+       <div className="w-full max-w-4xl mt-12 text-gray-300 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold text-blue-400 mb-3">How It Works</h3>
+                <ol className="list-decimal list-inside space-y-2 text-gray-400">
+                    <li><span className="font-semibold text-gray-300">Configure & Upload:</span> Choose your desired video style, quality, and creative options, then upload your .pptx file.</li>
+                    <li><span className="font-semibold text-gray-300">Review & Customize:</span> We'll extract text and images from each slide. You can review the content and select a primary image for each video.</li>
+                    <li><span className="font-semibold text-gray-300">Generate & Download:</span> Our AI generates a unique video for each slide (or a single combined video). Preview your videos and download them individually or as a single .zip file.</li>
+                </ol>
+            </div>
+            <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold text-blue-400 mb-3">Key Features</h3>
+                <ul className="list-disc list-inside space-y-2 text-gray-400">
+                    <li><span className="font-semibold text-gray-300">AI-Powered Creativity:</span> Utilizes the cutting-edge Gemini API for high-quality video generation.</li>
+                    <li><span className="font-semibold text-gray-300">Rich Customization:</span> Control aspect ratio, style, transitions, and even add Hollywood-style effects.</li>
+                    <li><span className="font-semibold text-gray-300">Automatic Voiceovers:</span> Intelligently generates a voiceover narration from the text on your slides.</li>
+                    <li><span className="font-semibold text-gray-300">Content-Aware Analysis:</span> Extracts both text and images, using them as context for the video.</li>
+                </ul>
+            </div>
+        </div>
+        <div className="text-center mt-8 text-sm text-gray-500">
+            <p><span className="font-semibold">Privacy Note:</span> Your uploaded files are processed securely and are only used for the video generation process. We do not store your presentations after the session ends.</p>
+        </div>
+      </div>
+
     </div>
   );
 };

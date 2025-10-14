@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -9,6 +10,7 @@ import { type SlideData, type VideoResult, type VideoStyle, type VideoQuality, t
 import { Header } from './components/Header';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { SlideReview } from './components/SlideReview';
+import { Footer } from './components/Footer';
 
 enum AppState {
   IDLE,
@@ -244,12 +246,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen text-white p-4 sm:p-8 flex flex-col items-center">
-      <div className="w-full max-w-7xl mx-auto">
+    <div className="min-h-screen text-white p-4 sm:p-8 flex flex-col">
+      <div className="w-full max-w-7xl mx-auto flex flex-col flex-grow">
         <Header />
-        <main className="mt-12 flex justify-center">
+        <main className="mt-12 flex justify-center flex-grow">
             {renderContent()}
         </main>
+        <Footer />
       </div>
     </div>
   );
