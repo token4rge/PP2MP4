@@ -5,7 +5,7 @@ import { LoadingIndicator } from './components/LoadingIndicator';
 import { ResultsDisplay } from './components/ResultsDisplay';
 import { extractSlidesFromPptx } from './services/pptxParser';
 import { generateVideoFromSlide, generateSingleVideoFromSlides } from './services/geminiService';
-import { type SlideData, type VideoResult, type VideoStyle, type VideoQuality, type HollywoodGenre, type AspectRatio, type FrameRate, type TransitionStyle, type SlideImage } from './types';
+import { type SlideData, type VideoResult, type VideoStyle, type VideoQuality, type HollywoodGenre, type AspectRatio, type FrameRate, type TransitionStyle, type SlideImage, type VideoFormat } from './types';
 import { Header } from './components/Header';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { SlideReview } from './components/SlideReview';
@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [hollywoodGenre, setHollywoodGenre] = useState<HollywoodGenre>('None');
   const [customKeywords, setCustomKeywords] = useState<string>('');
   const [transitionStyle, setTransitionStyle] = useState<TransitionStyle>('None');
+  const [videoFormat, setVideoFormat] = useState<VideoFormat>('MP4');
   const [addVoiceover, setAddVoiceover] = useState<boolean>(true);
   const [addHollywoodIntro, setAddHollywoodIntro] = useState<boolean>(false);
   const [videoDuration, setVideoDuration] = useState<number>(15);
@@ -229,6 +230,8 @@ const App: React.FC = () => {
             onKeywordsChange={setCustomKeywords}
             transitionStyle={transitionStyle}
             onTransitionChange={setTransitionStyle}
+            videoFormat={videoFormat}
+            onFormatChange={setVideoFormat}
             addVoiceover={addVoiceover}
             onVoiceoverChange={setAddVoiceover}
             addHollywoodIntro={addHollywoodIntro}

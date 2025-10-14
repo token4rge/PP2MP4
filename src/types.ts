@@ -31,3 +31,5 @@ export type FrameRate = '24fps' | '30fps' | '60fps';
 export type HollywoodGenre = 'None' | 'Action' | 'Sci-Fi' | 'Drama' | 'Thriller' | 'Epic Fantasy';
 
 export type TransitionStyle = 'None' | 'Fade' | 'Slide' | 'Zoom' | 'Wipe' | 'Crossfade' | 'Dissolve' | 'Iris' | 'Push';
+
+export type VideoFormat = 'MP4' | 'AVI' | 'MOV';

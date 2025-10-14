@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { UploadIcon } from './IconComponents';
-import { VideoStyle, VideoQuality, HollywoodGenre, AspectRatio, FrameRate, TransitionStyle } from '../types';
+import { VideoStyle, VideoQuality, HollywoodGenre, AspectRatio, FrameRate, TransitionStyle, VideoFormat } from '../types';
 import { generateKeywordsForStyle } from '../services/geminiService';
 
 
@@ -20,6 +20,8 @@ interface FileUploadProps {
   onKeywordsChange: (keywords: string) => void;
   transitionStyle: TransitionStyle;
   onTransitionChange: (style: TransitionStyle) => void;
+  videoFormat: VideoFormat;
+  onFormatChange: (format: VideoFormat) => void;
   addVoiceover: boolean;
   onVoiceoverChange: (add: boolean) => void;
   addHollywoodIntro: boolean;
@@ -34,6 +36,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     hollywoodGenre, onGenreChange, 
     customKeywords, onKeywordsChange,
     transitionStyle, onTransitionChange,
+    videoFormat, onFormatChange,
     addVoiceover, onVoiceoverChange,
     addHollywoodIntro, onHollywoodIntroChange,
     videoDuration, onDurationChange
@@ -108,144 +111,102 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const frameRates: FrameRate[] = ['24fps', '30fps', '60fps'];
   const hollywoodGenres: HollywoodGenre[] = ['None', 'Action', 'Sci-Fi', 'Drama', 'Thriller', 'Epic Fantasy'];
   const transitionStyles: TransitionStyle[] = ['None', 'Fade', 'Slide', 'Zoom', 'Wipe', 'Crossfade', 'Dissolve', 'Iris', 'Push'];
+  const videoFormats: VideoFormat[] = ['MP4', 'AVI', 'MOV'];
+  
   const transitionStyleLabels: Record<TransitionStyle, string> = {
-    'None': 'None (Individual Clips)',
-    'Fade': 'Fade',
-    'Slide': 'Slide',
-    'Zoom': 'Zoom',
-    'Wipe': 'Wipe',
-    'Crossfade': 'Crossfade',
-    'Dissolve': 'Dissolve',
-    'Iris': 'Iris',
-    'Push': 'Push'
-  }
+    'None': 'None (Individual Clips)', 'Fade': 'Fade', 'Slide': 'Slide', 'Zoom': 'Zoom', 'Wipe': 'Wipe', 'Crossfade': 'Crossfade', 'Dissolve': 'Dissolve', 'Iris': 'Iris', 'Push': 'Push'
+  };
+  const formatLabels: Record<VideoFormat, string> = {
+    'MP4': 'MP4 (Recommended)', 'AVI': 'AVI (Unsupported)', 'MOV': 'MOV (Unsupported)'
+  };
+
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
-      <div className="w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div>
-          <label htmlFor="video-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-            Video Style
-          </label>
-          <select
-            id="video-style"
-            name="video-style"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={videoStyle}
-            onChange={(e) => onStyleChange(e.target.value as VideoStyle)}
-          >
-            {videoStyles.map(style => (
-              <option key={style} value={style}>{style}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="video-quality" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-            Video Quality
-          </label>
-          <select
-            id="video-quality"
-            name="video-quality"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={videoQuality}
-            onChange={(e) => onQualityChange(e.target.value as VideoQuality)}
-          >
-            {videoQualities.map(quality => (
-              <option key={quality} value={quality}>{quality}</option>
-            ))}
-          </select>
-        </div>
-         <div>
-          <label htmlFor="aspect-ratio" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-            Aspect Ratio
-          </label>
-          <select
-            id="aspect-ratio"
-            name="aspect-ratio"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={aspectRatio}
-            onChange={(e) => onAspectRatioChange(e.target.value as AspectRatio)}
-          >
-            {aspectRatios.map(ratio => (
-              <option key={ratio} value={ratio}>{ratio}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="frame-rate" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-            Frame Rate
-          </label>
-          <select
-            id="frame-rate"
-            name="frame-rate"
-            className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-            value={frameRate}
-            onChange={(e) => onFrameRateChange(e.target.value as FrameRate)}
-          >
-            {frameRates.map(rate => (
-              <option key={rate} value={rate}>{rate}</option>
-            ))}
-          </select>
-        </div>
-        <div className="relative col-span-2">
-            <label htmlFor="transition-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-                Transition Style
-                {transitionStyle !== 'None' && (
-                    <span className="group relative ml-1">
-                        <svg className="inline-block w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
-                        <span className="absolute bottom-full left-1/2 z-10 w-48 p-2 -translate-x-1/2 mb-2 text-xs leading-tight text-white transform bg-gray-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                           With transitions, only the first slide's image can be used as a reference for the whole video.
-                        </span>
-                    </span>
-                )}
-            </label>
-            <select
-                id="transition-style"
-                name="transition-style"
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                value={transitionStyle}
-                onChange={(e) => onTransitionChange(e.target.value as TransitionStyle)}
-            >
-                {transitionStyles.map(style => (
-                <option key={style} value={style}>{transitionStyleLabels[style]}</option>
-                ))}
-            </select>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-            <label htmlFor="voiceover-toggle" className="block text-sm font-medium text-gray-300 mb-2 text-center">
-                Add Voiceover
-            </label>
-            <button
-                type="button"
-                className={`${addVoiceover ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`}
-                role="switch"
-                aria-checked={addVoiceover}
-                onClick={() => onVoiceoverChange(!addVoiceover)}
-                id="voiceover-toggle"
-            >
-                <span className={`${addVoiceover ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}/>
-            </button>
-        </div>
-      </div>
-      
-       <div className="w-full max-w-4xl col-span-full">
+      <div className="w-full max-w-4xl space-y-6">
+        <fieldset className="border border-gray-700 rounded-lg p-4 animate-fade-in">
+          <legend className="px-2 text-lg font-medium text-gray-300">Video Settings</legend>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label htmlFor="video-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">Video Style</label>
+              <select id="video-style" name="video-style" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={videoStyle} onChange={(e) => onStyleChange(e.target.value as VideoStyle)}>
+                {videoStyles.map(style => (<option key={style} value={style}>{style}</option>))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="video-quality" className="block text-sm font-medium text-gray-300 mb-2 text-center">Video Quality</label>
+              <select id="video-quality" name="video-quality" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={videoQuality} onChange={(e) => onQualityChange(e.target.value as VideoQuality)}>
+                {videoQualities.map(quality => (<option key={quality} value={quality}>{quality}</option>))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="aspect-ratio" className="block text-sm font-medium text-gray-300 mb-2 text-center">Aspect Ratio</label>
+              <select id="aspect-ratio" name="aspect-ratio" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={aspectRatio} onChange={(e) => onAspectRatioChange(e.target.value as AspectRatio)}>
+                {aspectRatios.map(ratio => (<option key={ratio} value={ratio}>{ratio}</option>))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="frame-rate" className="block text-sm font-medium text-gray-300 mb-2 text-center">Frame Rate</label>
+              <select id="frame-rate" name="frame-rate" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={frameRate} onChange={(e) => onFrameRateChange(e.target.value as FrameRate)}>
+                {frameRates.map(rate => (<option key={rate} value={rate}>{rate}</option>))}
+              </select>
+            </div>
+          </div>
+           <div className="mt-4 pt-2">
             <label htmlFor="video-duration" className="block text-sm font-medium text-gray-300 mb-2 text-center">
                 Video Duration: <span className="font-bold text-blue-400">{videoDuration}s</span>
             </label>
-            <input
-                id="video-duration"
-                type="range"
-                min="5"
-                max="60"
-                step="1"
-                value={videoDuration}
-                onChange={(e) => onDurationChange(parseInt(e.target.value, 10))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            />
-        </div>
+            <input id="video-duration" type="range" min="5" max="60" step="1" value={videoDuration} onChange={(e) => onDurationChange(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+          </div>
+        </fieldset>
 
+        <fieldset className="border border-gray-700 rounded-lg p-4 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <legend className="px-2 text-lg font-medium text-gray-300">Output &amp; Transitions</legend>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="relative">
+              <label htmlFor="video-format" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Output Format
+                <span className="group relative ml-1">
+                  <svg className="inline-block w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                  <span className="absolute bottom-full left-1/2 z-10 w-60 p-2 -translate-x-1/2 mb-2 text-xs leading-tight text-white transform bg-gray-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                    The Gemini API currently only supports MP4 video generation. Other formats are disabled.
+                  </span>
+                </span>
+              </label>
+              <select id="video-format" name="video-format" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={videoFormat} onChange={(e) => onFormatChange(e.target.value as VideoFormat)}>
+                {videoFormats.map(format => (<option key={format} value={format} disabled={format !== 'MP4'} className={format !== 'MP4' ? 'text-gray-500 cursor-not-allowed' : ''}>{formatLabels[format]}</option>))}
+              </select>
+            </div>
+            <div className="relative">
+              <label htmlFor="transition-style" className="block text-sm font-medium text-gray-300 mb-2 text-center">
+                Transition Style
+                {transitionStyle !== 'None' && (
+                <span className="group relative ml-1">
+                  <svg className="inline-block w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path></svg>
+                  <span className="absolute bottom-full left-1/2 z-10 w-48 p-2 -translate-x-1/2 mb-2 text-xs leading-tight text-white transform bg-gray-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">With transitions, only the first slide's image can be used as a reference for the whole video.</span>
+                </span>
+                )}
+              </label>
+              <select id="transition-style" name="transition-style" className="block w-full pl-3 pr-10 py-2 text-base border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" value={transitionStyle} onChange={(e) => onTransitionChange(e.target.value as TransitionStyle)}>
+                {transitionStyles.map(style => (<option key={style} value={style}>{transitionStyleLabels[style]}</option>))}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+        
+        <fieldset className="border border-gray-700 rounded-lg p-4 animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <legend className="px-2 text-lg font-medium text-gray-300">Creative Options</legend>
+          <div className="flex justify-center">
+            <div className="flex flex-col items-center justify-center">
+              <label htmlFor="voiceover-toggle" className="block text-sm font-medium text-gray-300 mb-2 text-center">Add Voiceover</label>
+              <button type="button" className={`${addVoiceover ? 'bg-blue-600' : 'bg-gray-600'} relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`} role="switch" aria-checked={addVoiceover} onClick={() => onVoiceoverChange(!addVoiceover)} id="voiceover-toggle">
+                <span className={`${addVoiceover ? 'translate-x-6' : 'translate-x-1'} inline-block w-4 h-4 transform bg-white rounded-full transition-transform`} />
+              </button>
+            </div>
+          </div>
+        </fieldset>
 
-      {videoStyle === 'Hollywood' && (
+        {videoStyle === 'Hollywood' && (
         <div className="w-full max-w-4xl bg-gray-800 p-4 rounded-lg animate-slide-down flex flex-col sm:flex-row gap-4 items-center">
            <div className="flex flex-col">
               <label htmlFor="hollywood-genre" className="block text-sm font-medium text-gray-300 mb-2 text-center">
@@ -303,6 +264,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </div>
         </div>
       )}
+      </div>
 
       <label 
           htmlFor="file-upload"
