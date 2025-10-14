@@ -7,12 +7,23 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 const pollVideoOperation = async (operation: any): Promise<any> => {
     let currentOperation = operation;
+    let retries = 0;
+    const MAX_RETRIES = 5;
+
     while (!currentOperation.done) {
         await new Promise(resolve => setTimeout(resolve, 10000));
         try {
             currentOperation = await ai.operations.getVideosOperation({ operation: currentOperation });
+            retries = 0; // Reset on success
         } catch (e) {
-            console.error("Polling failed, will retry...", e);
+            console.error("Polling for video operation failed. Retrying...", e);
+            retries++;
+            if (retries >= MAX_RETRIES) {
+                if (e instanceof Error) {
+                    throw new Error(`Polling for video status failed after ${MAX_RETRIES} retries: ${e.message}`);
+                }
+                throw new Error(`Polling for video status failed after ${MAX_RETRIES} retries.`);
+            }
         }
     }
     return currentOperation;
@@ -55,26 +66,25 @@ export const generateKeywordsForStyle = async (genre: HollywoodGenre): Promise<s
 const handleApiError = (error: any, context: string): Error => {
     console.error(`Error ${context}:`, error);
 
-    // Check for structured API errors from the operation result
+    // Prefer using a structured error message if available.
     if (error?.message) {
-        const message = error.message.toLowerCase();
-        if (message.includes('safety')) {
+        const message = String(error.message);
+        const lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.includes('safety')) {
             return new Error("The prompt was blocked due to a safety policy. Please modify the slide text or keywords.");
         }
-        if (message.includes('invalid argument')) {
-            return new Error(`The request was invalid. The API reported: ${error.message}`);
+        if (lowerMessage.includes('invalid argument')) {
+            return new Error(`The request was invalid. The API reported: ${message}`);
         }
-        if (message.includes('internal')) {
+        if (lowerMessage.includes('internal')) {
             return new Error("An internal server error occurred with the API. Please try again later.");
         }
+        // If no specific keyword is found, return the original API error message.
+        return new Error(message);
     }
     
-    // Check for generic JS Error objects (e.g., from network failures during polling)
-    if (error instanceof Error) {
-        return new Error(`A network or API error occurred: ${error.message}`);
-    }
-
-    // Fallback for unknown error types
+    // Fallback for non-standard errors
     return new Error(`An unknown error occurred ${context}.`);
 };
 
@@ -116,7 +126,6 @@ export const generateVideoFromSlide = async (
             prompt,
             config: {
                 numberOfVideos: 1,
-                durationSecs: duration,
             }
         };
 
@@ -207,7 +216,6 @@ export const generateSingleVideoFromSlides = async (
             prompt,
             config: {
                 numberOfVideos: 1,
-                durationSecs: duration
             }
         };
 
