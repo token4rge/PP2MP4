@@ -4,67 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PowerPoint to MP4 Converter</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-<style>
-  /* Custom animation styles are kept here for simplicity */
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-  .animate-fade-in {
-    animation: fade-in 0.5s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
-  }
-  @keyframes slide-down {
-    from {
-      opacity: 0;
-      transform: translateY(-1rem);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  .animate-slide-down {
-    animation: slide-down 0.3s ease-out forwards;
-  }
-
-  @keyframes scale-in-check {
-    from {
-        transform: scale(0);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1);
-        opacity: 1;
-    }
-  }
-  .animate-scale-in-check {
-    animation: scale-in-check 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-</style>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^18.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^18.2.0/",
-    "react/": "https://aistudiocdn.com/react@^18.2.0/",
-    "jszip": "https://aistudiocdn.com/jszip@^3.10.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0",
+    "vite": "https://aistudiocdn.com/vite@^7.1.9",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4",
-    "vite": "https://aistudiocdn.com/vite@^7.1.9"
+    "jszip": "https://aistudiocdn.com/jszip@^3.10.1"
   }
 }
 </script>
 </head>
   <body class="bg-gray-900">
     <div id="root"></div>
-    <script type="text/babel" data-type="module" data-presets="react,typescript" src="src/index.tsx"></script>
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>
