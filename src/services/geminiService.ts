@@ -1,11 +1,27 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { SlideData, VideoStyle, VideoQuality, AspectRatio, HollywoodGenre, FrameRate, TransitionStyle, SlideImage } from "../types";
 
 declare const process: any;
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+// A singleton instance to avoid re-creating the client on every call
+let ai: GoogleGenAI | null = null;
 
-const pollVideoOperation = async (operation: any): Promise<any> => {
+const getGenAIClient = (): GoogleGenAI => {
+    // Vite replaces process.env.API_KEY with the value at build time.
+    // If it's undefined or an empty string, we should throw an error.
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        throw new Error("API_KEY is not configured. Please ensure it's set in your deployment environment.");
+    }
+    if (!ai) {
+        ai = new GoogleGenAI({ apiKey: apiKey });
+    }
+    return ai;
+};
+
+
+const pollVideoOperation = async (operation: any, ai_client: GoogleGenAI): Promise<any> => {
     let currentOperation = operation;
     let retries = 0;
     const MAX_RETRIES = 5;
@@ -13,7 +29,7 @@ const pollVideoOperation = async (operation: any): Promise<any> => {
     while (!currentOperation.done) {
         await new Promise(resolve => setTimeout(resolve, 10000));
         try {
-            currentOperation = await ai.operations.getVideosOperation({ operation: currentOperation });
+            currentOperation = await ai_client.operations.getVideosOperation({ operation: currentOperation });
             retries = 0; // Reset on success
         } catch (e) {
             console.error("Polling for video operation failed. Retrying...", e);
@@ -31,7 +47,8 @@ const pollVideoOperation = async (operation: any): Promise<any> => {
 
 export const extractTextFromImage = async (image: SlideImage): Promise<string> => {
     try {
-        const response = await ai.models.generateContent({
+        const ai_client = getGenAIClient();
+        const response = await ai_client.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: {
                 parts: [
@@ -51,7 +68,8 @@ export const extractTextFromImage = async (image: SlideImage): Promise<string> =
 export const generateKeywordsForStyle = async (genre: HollywoodGenre): Promise<string> => {
     if (genre === 'None') return "";
     try {
-         const response = await ai.models.generateContent({
+        const ai_client = getGenAIClient();
+         const response = await ai_client.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: `Generate 5-7 creative and descriptive keywords for a video with a "${genre}" genre. Return only a comma-separated list. For example: "keyword one, keyword two, keyword three"`,
         });
@@ -102,6 +120,7 @@ export const generateVideoFromSlide = async (
     duration: number,
 ): Promise<{ videoUri: string; thumbnailUri?: string }> => {
     try {
+        const ai_client = getGenAIClient();
         let introPrompt = '';
         if (addHollywoodIntro && style === 'Hollywood') {
             introPrompt = `Start with a dramatic 5-10 second movie trailer intro. It should be a fast-paced montage with epic music, teasing the main themes. After the intro, the main video begins. `;
@@ -136,8 +155,8 @@ export const generateVideoFromSlide = async (
             };
         }
 
-        let operation = await ai.models.generateVideos(request);
-        const finalOperation = await pollVideoOperation(operation);
+        let operation = await ai_client.models.generateVideos(request);
+        const finalOperation = await pollVideoOperation(operation, ai_client);
 
         const downloadLink = finalOperation.response?.generatedVideos?.[0]?.video?.uri;
         if (!downloadLink) {
@@ -168,6 +187,7 @@ export const generateSingleVideoFromSlides = async (
 ): Promise<{ videoUri: string; thumbnailUri?: string }> => {
     
     try {
+        const ai_client = getGenAIClient();
         let seedImage: { imageBytes: string; mimeType: string; } | undefined = undefined;
         for (const slide of slides) {
             const selectedImageIndex = selectedImages[slide.slideNumber];
@@ -224,8 +244,8 @@ export const generateSingleVideoFromSlides = async (
             console.log("Using an image from the presentation as a visual seed for the entire video.");
         }
         
-        let operation = await ai.models.generateVideos(request);
-        const finalOperation = await pollVideoOperation(operation);
+        let operation = await ai_client.models.generateVideos(request);
+        const finalOperation = await pollVideoOperation(operation, ai_client);
 
         const downloadLink = finalOperation.response?.generatedVideos?.[0]?.video?.uri;
         if (!downloadLink) {
